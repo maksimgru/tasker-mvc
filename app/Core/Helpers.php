@@ -31,7 +31,7 @@ class Helpers
     */
     public static function asset($path = ''): string
     {
-        return BASE_PATH . '/' . BASE_ASSET_PATH . '/' . $path;
+        return BASE . '/' . BASE_ASSET_PATH . '/' . $path;
     }
 
     /**
@@ -48,7 +48,7 @@ class Helpers
         $queryString = self::buildQueryString($params);
         $queryString = $queryString ? '?' . $queryString : '';
 
-        return rtrim(BASE_PATH, '/') . '/' . rtrim($path, '/') . $queryString;
+        return rtrim(BASE, '/') . '/' . rtrim($path, '/') . $queryString;
     }
 
     /**
@@ -194,25 +194,25 @@ class Helpers
      */
     public static function isAdminAuth(): bool
     {
-        return isset($_SESSION['admin_auth']) && $_SESSION['admin_auth'];
+        return !empty($_SESSION['authUserId']) && $_SESSION['authUserId'] === ADMIN_ID ?: false;
     }
 
     /**
-     * @return boolean
+     * @param int $userId
+     *
+     * @return int
      */
-    public static function adminAuth(): bool
+    public static function auth(int $userId): int
     {
-        return $_SESSION['admin_auth'] = true;
+        return $_SESSION['authUserId'] = $userId;
     }
 
     /**
-     * @return void
+     * @return bool
      */
-    public static function adminLogout()
+    public static function logout(): bool
     {
-        unset($_SESSION['admin_auth']);
-        //header('Location: ' . Helpers::path('users/table'));
-        //exit;
+        return self::deleteFlash('authUserId');
     }
 
     /**
@@ -224,5 +224,40 @@ class Helpers
     {
         header('Location: ' . self::path($path));
         exit;
+    }
+
+    /**
+     * @param mixed  $key
+     * @param string $value
+     *
+     * @return mixed
+     */
+    public static function setFlash($key, $value = '')
+    {
+        return $key ? $_SESSION[$key] = $value : false;
+    }
+
+    /**
+     * @param mixed $key
+     *
+     * @return mixed
+     */
+    public static function getFlash($key)
+    {
+        return $_SESSION[$key] ?? false;
+    }
+
+    /**
+     * @param mixed $key
+     *
+     * @return bool
+     */
+    public static function deleteFlash($key): bool
+    {
+        if (!empty($_SESSION[$key])) {
+            unset($_SESSION[$key]);
+        }
+
+        return true;
     }
 }

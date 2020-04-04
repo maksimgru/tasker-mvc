@@ -27,7 +27,13 @@
                 <td><?php echo $task['id']; ?></td>
                 <td><?php echo $task['username']; ?></td>
                 <td><?php echo $task['email']; ?></td>
-                <td><?php if ($task['status']) { ?>Выполнено<?php } else { ?>В процессе<?php } ?></td>
+                <td class="font-weight-bold">
+                    <?php if ($task['status']) { ?>
+                        <span class="text-success">Completed</span>
+                    <?php } else { ?>
+                        <span class="text-warning">In progress</span>
+                    <?php } ?>
+                </td>
                 <td><?php echo $task['description']; ?></td>
                 <?php if (Helpers::isAdminAuth()) { ?>
                     <td><a href="<?php echo Helpers::path('task/edit/' . $task['id']); ?>" class="edit-user">Edit</a></td>

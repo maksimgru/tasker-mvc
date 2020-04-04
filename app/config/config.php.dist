@@ -1,8 +1,9 @@
 <?php
 
-define('BASE_PATH', '/BEEJEE/tasker/public');
+define('BASE', '/BEEJEE/tasker/public');
 define('BASE_ASSET_PATH', 'assets');
 define('PER_PAGE', 3);
+define('ADMIN_ID', 1);
 
 define('DB_DRIVER', 'mysql');
 define('DB_USERNAME', 'root');
