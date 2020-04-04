@@ -1,0 +1,14 @@
+<?php
+
+define('BASE_PATH', '/BEEJEE/tasker/public');
+define('BASE_ASSET_PATH', 'assets');
+define('PER_PAGE', 3);
+
+define('DB_DRIVER', 'mysql');
+define('DB_USERNAME', 'root');
+define('DB_PASSWORD', '123456');
+define('DB_NAME', 'tasker');
+define('DB_HOST', 'localhost');
+define('DB_PORT', '3306');
+
+define('AUTH_SALT', 'security-salt-string');
