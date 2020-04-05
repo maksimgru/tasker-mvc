@@ -23,7 +23,15 @@ class Database {
     {
         $dsn = DB_DRIVER . ':host=' . DB_HOST . ';dbname=' . DB_NAME . ';port=' . DB_PORT . ';charset=UTF8';
         try {
-            $this->database = new PDO($dsn, DB_USERNAME, DB_PASSWORD, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+            $this->database = new PDO(
+                $dsn,
+                DB_USERNAME,
+                DB_PASSWORD,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+                ]
+            );
             if (!$this->database) {
                 throw new PDOException('Error connection to DB');
             }
@@ -47,12 +55,19 @@ class Database {
     }
 
     /**
-     * Description:
+     * @param PDO|null $connection
+     *
+     * @return void
      */
+    public static function closeConnection(&$connection = null) {
+        if ($connection) {
+            $connection = null;
+        } else {
+            self::$dbInstance->database = null;
+        }
+    }
+
     private function __clone() {} // prevent cloning
 
-    /**
-     * Description:
-     */
     private function __wakeup() {} // prevent unserialization
 }

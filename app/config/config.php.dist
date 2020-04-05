@@ -1,6 +1,6 @@
 <?php
 
-define('BASE', '/BEEJEE/tasker/public');
+define('BASE', '/');
 define('BASE_ASSET_PATH', 'assets');
 define('PER_PAGE', 3);
 define('ADMIN_ID', 1);

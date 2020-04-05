@@ -49,5 +49,8 @@ class App
 
         // Execute controller action method and pass params in this controller action method.
         \call_user_func_array([$this->controller, $this->method], $this->params);
+
+        // Close DB connection
+        Database::closeConnection();
    }
 }

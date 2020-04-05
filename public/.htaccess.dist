@@ -2,7 +2,7 @@ Options -MultiViews
 RewriteEngine On
 Options -Indexes
 
-RewriteBase /BEEJEE/tasker/public
+RewriteBase /
 
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f

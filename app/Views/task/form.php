@@ -44,7 +44,7 @@
         <div class="col-md-12">
             <?php $error = $data['formErrors']['description']; ?>
             <label for="description">Description</label>
-            <textarea id="description"
+            <textarea id="description" rows="5"
                 class="form-control <?php echo $error ? 'is-invalid' : ''; ?>"
                 name="description"
                 placeholder="Description"

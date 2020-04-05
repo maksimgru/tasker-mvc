@@ -11,17 +11,28 @@
 
     <body>
         <div id="wrapper">
-            <header id="header">
-                <h1 class="text-center">Tasker</h1>
-                <div class="text-center">
-                    <a href="https://github.com/maksimgru/tasker" class="download" title="Fork me on GitHub" target="_blank">view on GitHub</a>
-                </div>
-                <nav id="top-nav">
-                    <ul class="main-menu fl">
-                        <li><a href="<?php echo Helpers::path(); ?>" class="<?php echo Helpers::isCurrentURI('task/table') ? 'active' : ''; ?>">Home</a></li>
-                        <li><a href="<?php echo Helpers::path('task/create'); ?>" class="<?php echo Helpers::isCurrentURI('task/create') ? 'active' : ''; ?>">Add New Task</a></li>
-                    </ul>
-                </nav>
-            </header><!-- #header-->
-
             <section id="content" class="container">
+                <header id="header" class="py-3">
+                    <div class="row flex-nowrap justify-content-between align-items-center">
+                        <div class="col-4 pt-1">
+                            <a href="https://github.com/maksimgru/tasker-mvc" class="text-muted" title="Fork me on GitHub" target="_blank">view on GitHub</a>
+                        </div>
+                        <div class="col-4 text-center">
+                            <h1>Tasker</h1>
+                        </div>
+                        <div class="col-4 d-flex justify-content-end align-items-center">
+                            <?php if (Helpers::isAuth()) { ?>
+                                <a class="btn btn-sm btn-outline-dark" href="<?php echo Helpers::path('user/logout'); ?>">Logout</a>
+                            <?php } else { ?>
+                                <a class="btn btn-sm btn-outline-dark" href="<?php echo Helpers::path('user/login'); ?>">Sign in</a>
+                            <?php } ?>
+                        </div>
+                    </div>
+                    <nav id="top-nav">
+                        <ul class="main-menu fl">
+                            <li><a href="<?php echo Helpers::path(); ?>" class="<?php echo Helpers::isCurrentURI('task/table') ? 'active' : ''; ?>">Home</a></li>
+                            <li><a href="<?php echo Helpers::path('task/create'); ?>" class="<?php echo Helpers::isCurrentURI('task/create') ? 'active' : ''; ?>">Add New Task</a></li>
+                        </ul>
+                    </nav>
+                </header>
+

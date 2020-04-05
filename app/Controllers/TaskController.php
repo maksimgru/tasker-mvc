@@ -29,7 +29,8 @@ class TaskController extends Controller
     /**
      * @return void
      */
-    public function tableAction() {
+    public function tableAction()
+    {
         $data = $this->taskModel->getTasks(Helpers::parseQueryString());
 
         $this->view('task/table', [
@@ -46,14 +47,15 @@ class TaskController extends Controller
     public function createAction()
     {
         $checkedData = $this->taskModel->validateTaskForm($_POST);
-        $newTaskID = Helpers::getFlash('newTaskID');
+        $newTaskId = Helpers::getFlash('newTaskID');
         Helpers::deleteFlash('newTaskID');
 
         // Check if submit and valid form
         if ($checkedData['isSubmitForm'] && $checkedData['isValidForm']) {
-            $newTaskID = $this->taskModel->save($checkedData['formData']);
-            if ($newTaskID) {
-                Helpers::setFlash('newTaskID', $newTaskID);
+            $newTask = $this->taskModel->save($checkedData['formData']);
+            $newTaskId = $newTask->getId();
+            if ($newTaskId) {
+                Helpers::setFlash('newTaskID', $newTaskId);
                 Helpers::redirectTo('task/create');
             } else {
                 $checkedData['isValidForm'] = false;
@@ -62,7 +64,7 @@ class TaskController extends Controller
         }
 
         $this->view('task/create', [
-            'newTaskID'    => $newTaskID,
+            'newTaskID'    => $newTaskId,
             'isAdminAuth'  => Helpers::isAdminAuth(),
             'isValidForm'  => $checkedData['isValidForm'],
             'isSubmitForm' => $checkedData['isSubmitForm'],
@@ -82,8 +84,12 @@ class TaskController extends Controller
      */
     public function editAction($taskId = 0)
     {
+        if (!Helpers::isAuth()) {
+            Helpers::redirectTo('user/login', ['redirect_to' => 'task/edit/' . (int) $taskId]);
+        }
+
         $task = $this->taskModel->getById((int) $taskId);
-        if (!$task) {
+        if (!$task->getId()) {
             Helpers::redirectTo('task/table');
         }
 
@@ -94,17 +100,17 @@ class TaskController extends Controller
         // Check if submit and valid form
         if ($checkedData['isSubmitForm']) {
             if ($checkedData['isValidForm']) {
-                $updated = $this->taskModel->update($checkedData['formData'], (int) $taskId);
+                $updated = $this->taskModel->update($checkedData['formData'], $task);
                 if ($updated) {
                     Helpers::setFlash('updated', (bool) $updated);
-                    Helpers::redirectTo('task/edit/' . $taskId);
+                    Helpers::redirectTo('task/edit/' . $task->getId());
                 } else {
                     $checkedData['isValidForm'] = false;
                     $checkedData['errorMessage'][] = 'Error!!! Can\'t update Task. Please try again.';
                 }
             }
         } else {
-            $checkedData['formData'] = $task;
+            $checkedData['formData'] = $task->toArray();
         }
 
         $this->view('task/edit', [

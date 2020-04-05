@@ -12,16 +12,24 @@ class Helpers
      */
     public static function clean($data, $type = 'str')
     {
-        switch ($type) {
-            case 'str':
-                return nl2br(htmlspecialchars(stripslashes(trim(strip_tags($data)))));
-                break;
-            case 'int':
-                return (int) $data;
-            default:
-                return nl2br(htmlspecialchars(stripslashes(trim(strip_tags($data)))));
-                break;
+        if (\is_array($data)) {
+            foreach ($data as $key => $val) {
+                $data[self::clean($key)] = self::clean($val);
+            }
+            $result = $data;
+        } else {
+            switch ($type) {
+                case 'int':
+                    $result = (int) $data;
+                    break;
+                case 'str':
+                default:
+                    $result = htmlspecialchars(stripslashes(trim(strip_tags($data))));
+                    break;
+            }
         }
+
+        return $result;
     }
 
     /*
@@ -31,7 +39,7 @@ class Helpers
     */
     public static function asset($path = ''): string
     {
-        return BASE . '/' . BASE_ASSET_PATH . '/' . $path;
+        return rtrim(BASE, '/') . '/' . rtrim(BASE_ASSET_PATH, '/') . '/' . rtrim($path, '/');
     }
 
     /**
@@ -100,7 +108,7 @@ class Helpers
 
         foreach ($splitData as $pair) {
             [$key, $value] = explode('=', $pair);
-            $parsedData[$key] = $value;
+            $parsedData[self::clean($key)] = self::clean($value);
         }
 
         return $parsedData;
@@ -198,6 +206,14 @@ class Helpers
     }
 
     /**
+     * @return boolean $bool
+     */
+    public static function isAuth(): bool
+    {
+        return !empty($_SESSION['authUserId']);
+    }
+
+    /**
      * @param int $userId
      *
      * @return int
@@ -217,12 +233,15 @@ class Helpers
 
     /**
      * @param string $path
+     * @param array  $params
      *
      * @return void
      */
-    public static function redirectTo(string $path = '')
-    {
-        header('Location: ' . self::path($path));
+    public static function redirectTo(
+        string $path = '',
+        array $params = []
+    ) {
+        header('Location: ' . self::path($path, $params));
         exit;
     }
 

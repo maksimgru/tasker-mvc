@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: localhost
--- Время создания: Апр 04 2020 г., 17:13
+-- Время создания: Апр 05 2020 г., 14:57
 -- Версия сервера: 10.1.29-MariaDB
 -- Версия PHP: 7.2.0
 
@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `email` varchar(255) NOT NULL,
   `status` tinyint(1) DEFAULT NULL,
   `description` text NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -57,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `password`) VALUES
-  (1, 'admin', 'c6353e3ee52dc928e13ba2d0faf78d1b');
+(1, 'admin', 'c6353e3ee52dc928e13ba2d0faf78d1b');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

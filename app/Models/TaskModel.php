@@ -8,10 +8,31 @@ class TaskModel extends Model
 {
     public const TABLE_NAME = 'tasks';
 
+    /** @var int */
+    protected $id;
+
+    /** @var string */
+    protected $username;
+
+    /** @var string */
+    protected $email;
+
+    /** @var bool */
+    protected $status;
+
+    /** @var string */
+    protected $description;
+
+    /** @var string */
+    protected $created_at;
+
+    /** @var string */
+    protected $updated_at;
+
     /**
      * @return array
      */
-    public function getColumnsNameForOrderBy(): array
+    public function getOrderableColumns(): array
     {
         return [
             'id',
@@ -24,7 +45,7 @@ class TaskModel extends Model
     /**
      * @return array
      */
-    public function getColumnsNameForSelected(): array
+    public function getSelectableColumns(): array
     {
         return [
             'id',
@@ -32,6 +53,19 @@ class TaskModel extends Model
             'email',
             'status',
             'description',
+            'created_at',
+            'updated_at',
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function getDateColumns(): array
+    {
+        return [
+            'created_at',
+            'updated_at',
         ];
     }
 
@@ -54,17 +88,24 @@ class TaskModel extends Model
     public function getColumnsMeta(): array
     {
         $cols = [];
-        $orderable = $this->getColumnsNameForOrderBy();
-        $selectable = $this->getColumnsNameForSelected();
+        $orderable = $this->getOrderableColumns();
+        $selectable = $this->getSelectableColumns();
+        $dateColumns = $this->getDateColumns();
         $parsedQueryString = Helpers::parseQueryString();
         $orderby = !empty($parsedQueryString['orderby']) ? Helpers::clean($parsedQueryString['orderby']) : '';
         $order = !empty($parsedQueryString['order']) ? Helpers::clean($parsedQueryString['order']) : '';
 
         foreach ($selectable as $columnName) {
+            // Skip date name columns
+            if (\in_array($columnName, $dateColumns, true)) {
+                continue;
+            }
+
             $col = [];
             $htmlClasses = [];
             $orderbyUri = '';
 
+            // If column is orderable, calculate URI for ordering by this column
             if (\in_array(strtolower($columnName), $orderable, true)) {
                 $htmlClasses[] = 'ordering';
                 $htmlClasses[] = $orderby === $columnName ? 'active' : '';
@@ -92,8 +133,8 @@ class TaskModel extends Model
     public function getTasks(array $args = []): array
     {
         $rows = [];
-        $orderable = $this->getColumnsNameForOrderBy();
-        $selectable = $this->getColumnsNameForSelected();
+        $orderable = $this->getOrderableColumns();
+        $selectable = $this->getSelectableColumns();
 
         //Default Args
         $argsDefault = $this->getDefaultGETParams();
@@ -124,17 +165,14 @@ class TaskModel extends Model
         // Prepare and execute SQL query
         try {
             $stmn = $this->db->query($sql);
-            $stmn->setFetchMode(\PDO::FETCH_ASSOC);
             if ($stmn->rowCount()){
                 $rows = $stmn->fetchAll();
             }
         } catch (\PDOException $e) {
-            //echo $e->getMessage();
+            echo $e->getMessage();
         }
 
         $totalRows = $this->getTotalTasks();
-
-        $this->db = null;
 
         $paginationMeta = Helpers::calculatePaginationMeta(
             $totalRows,
@@ -212,125 +250,132 @@ class TaskModel extends Model
      *
      * @return array
      */
-    public function getById(int $id): array
+    public function getById(int $id): self
     {
+        $selectable = $this->getSelectableColumns();
+
         $sql = sprintf(
-            'SELECT * FROM `%1$s` WHERE `id`=%2$d',
+            'SELECT %2$s FROM `%1$s` WHERE `id`=:id LIMIT 1',
             self::TABLE_NAME,
-            $id
+            '`' . implode('`, `', $selectable) . '`'
         );
 
         try {
-            $stmn = $this->db->query($sql);
-            $stmn->setFetchMode(\PDO::FETCH_ASSOC);
-            if ($stmn->rowCount()){
-                $row = $stmn->fetchAll();
-            }
+            $stmn = $this->db->prepare($sql);
+            $stmn->bindParam(':id', $id, \PDO::PARAM_INT);
+            $stmn->execute();
+            $row = $stmn->fetch();
         } catch (\PDOException $e) {
             //echo $e->getMessage();
         }
 
-        return $row[0] ?? [];
+        $row = $row ?: [];
+
+        return $this->setFields($row);
     }
 
     /**
      * @param array $data
      *
-     * @return int
+     * @return TaskModel
      */
-    public function save(array $data): int
+    public function save(array $data): self
     {
-        $lastInsertId = 0;
+        $isCreated = false;
+        $colName = [];
+        $colParam = [];
+        $createdAt = (new \DateTime())->format('Y-m-d H:i:s');
+        $updatedAt = Helpers::isAdminAuth() ? $createdAt : null;
 
-        if (\is_array($data)) {
-            $isInserted = false;
+        // Build sql query string
+        foreach ($data as $key => $val) {
+            $colName[] = '`' . $key . '`';
+            $colParam[] = ':' . $key;
+        }
+        $colName[] = 'created_at';
+        $colParam[] = ':created_at';
+        $colName[] = 'updated_at';
+        $colParam[] = ':updated_at';
 
-            $colName = [];
-            $colParam = [];
+        $sql = sprintf(
+            'INSERT INTO `%1$s` (%2$s) VALUES (%3$s)',
+            self::TABLE_NAME,
+            implode(', ', $colName),
+            implode(', ', $colParam)
+        );
 
-            // Build sql query string
+        // Prepare and bind params and execute SQL query
+        try {
+            $stmn = $this->db->prepare($sql);
+            $stmn->bindParam(':created_at', $createdAt);
+            $stmn->bindParam(':updated_at', $updatedAt);
             foreach ($data as $key => $val) {
-                $colName[] = '`' . $key . '`';
-                $colParam[] = ':' . $key;
+                // $$key - dynamic var name for column value;
+                // cause bindParam method take second param by reference;
+                $$key = $val;
+                $stmn->bindParam(':' . $key, $$key);
             }
-
-            $colName = implode(', ', $colName);
-            $colParam = implode(', ', $colParam);
-
-            $sql = sprintf(
-                'INSERT INTO `%1$s` (%2$s) VALUES (%3$s)',
-                self::TABLE_NAME,
-                $colName,
-                $colParam
-            );
-
-            // Prepare and bind params and execute SQL query
-            try {
-                $stmn = $this->db->prepare($sql);
-                foreach ($data as $key => $val) {
-                    // $$key - dynamic var name for column value;
-                    // cause bindParam method take second param by reference;
-                    $$key = $val;
-                    $stmn->bindParam(':' . $key, $$key);
-                }
-                $isInserted = $stmn->execute();
-            } catch (\PDOException $e) {
-                //echo $e->getMessage();
-            }
-
-            // get lastInsertId
-            $lastInsertId = $isInserted ? $this->db->lastInsertId() : $lastInsertId;
+            $isCreated = $stmn->execute();
+        } catch (\PDOException $e) {
+            //echo $e->getMessage();
         }
 
-        $this->db = null;
-
-        return $lastInsertId;
+        return $this->getById($isCreated ? $this->db->lastInsertId() : 0);
     }
 
     /**
-     * @param array $data
-     * @param int   $taskId
+     * @param array     $data
+     * @param TaskModel $task
      *
-     * @return int
+     * @return TaskModel|null
      */
-    public function update(array $data, int $taskId): int
+    public function update(array $data, TaskModel $task): ?self
     {
-        $updated = false;
+        $isUpdated = false;
+        $taskId = $task->getId();
+        $cols = [];
+        $updatedAt = null;
 
-        if (\is_array($data)) {
-            $cols = [];
-            unset($data['id']);
-
-            // Build sql query string
-            foreach ($data as $key => $val) {
-                $cols[] = '`' . $key . '`=' . ':' . $key;
-            }
-
-            $sql = sprintf(
-                'UPDATE `%1$s` SET %2$s WHERE `id`=:id',
-                self::TABLE_NAME,
-                implode(', ', $cols)
-            );
-
-            // Prepare and bind params and execute SQL query
-            try {
-                $stmn = $this->db->prepare($sql);
-                $stmn->bindParam(':id', $taskId);
-                foreach ($data as $key => $val) {
-                    // $$key - dynamic var name for column value;
-                    // cause bindParam method take second param by reference;
-                    $$key = $val;
-                    $stmn->bindParam(':' . $key, $$key);
-                }
-                $updated = $stmn->execute();
-            } catch (\PDOException $e) {
-                //echo $e->getMessage();
-            }
+        // Set updated_at only if Admin edit description of task
+        if (!empty($data['description'])
+            && $task->getDescription() !== $data['description']
+            && Helpers::isAdminAuth()
+        ) {
+            $updatedAt = (new \DateTime())->format('Y-m-d H:i:s');
         }
 
-        $this->db = null;
+        // To Ensure dont update ID
+        unset($data['id']);
 
-        return $updated;
+        // Build sql query string
+        foreach ($data as $key => $val) {
+            $cols[] = '`' . $key . '`=' . ':' . $key;
+        }
+        $cols[] = '`updated_at`=:updated_at';
+
+        $sql = sprintf(
+            'UPDATE `%1$s` SET %2$s WHERE `id`=:id',
+            self::TABLE_NAME,
+            implode(', ', $cols)
+        );
+
+        // Prepare and bind params and execute SQL query
+        try {
+            $stmn = $this->db->prepare($sql);
+            $stmn->bindParam(':id', $taskId);
+            $stmn->bindParam(':updated_at', $updatedAt);
+            foreach ($data as $key => $val) {
+                // $$key - dynamic var name for column value;
+                // cause bindParam method take second param by reference;
+                $$key = $val;
+                $stmn->bindParam(':' . $key, $$key);
+            }
+            $isUpdated = $stmn->execute();
+        } catch (\PDOException $e) {
+            //echo $e->getMessage();
+        }
+
+        return $isUpdated ? $this->getById($taskId) : null;
     }
 
     /**
@@ -360,7 +405,7 @@ class TaskModel extends Model
         ];
 
         // Check If POST request and Form submit
-        if (HELPERS::isRequestMethod('POST') && !empty($formData['submit'])) {
+        if (!empty($formData['submit']) && Helpers::isRequestMethod('POST')) {
             unset($formData['submit']);
             // Sanitize POST form data
             $formData = $this->sanitizeForm($formData);
@@ -391,7 +436,7 @@ class TaskModel extends Model
             $checkedData['isValidForm'] = ($errorsTotal === 0);
 
             if (!$checkedData['isValidForm']) {
-                $checkedData['errorMessage'][] = 'Error!!! Invalid some form field. Please correct fill form field and try again.';
+                $checkedData['errorMessage'][] = 'Error. Please correct fill some form fields and try again.';
             }
         }
 
@@ -401,18 +446,172 @@ class TaskModel extends Model
     }
 
     /**
-     * @param array $data The form data
-     *
-     * @return array $data The sanitized form data
+     * @return array
      */
-    protected function sanitizeForm($data): array
+    public function toArray(): array
     {
-        foreach ($data as $key => $val) {
-            $key = HELPERS::clean($key);
-            $val = \is_array($val) ? $this->sanitizeForm($val) : HELPERS::clean($val);
-            $data[$key] = $val;
-        }
+        return [
+            'id'          => $this->getId(),
+            'username'    => $this->getUsername(),
+            'email'       => $this->getEmail(),
+            'status'      => $this->getStatus(),
+            'description' => $this->getDescription(),
+            'createAt'    => $this->getCreatedAt(),
+            'updatedAt'   => $this->getUsername(),
+        ];
+    }
 
-        return $data;
+    /**
+     * Getter $id
+     *
+     * @return int
+     */
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    /**
+     * Getter $username
+     *
+     * @return string
+     */
+    public function getUsername(): string
+    {
+        return $this->username;
+    }
+
+    /**
+     * Setter $username
+     *
+     * @param string $username
+     *
+     * @return TaskModel
+     */
+    public function setUsername(string $username): self
+    {
+        $this->username = $username;
+
+        return $this;
+    }
+
+    /**
+     * Getter $email
+     *
+     * @return string
+     */
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    /**
+     * Setter $email
+     *
+     * @param string $email
+     *
+     * @return TaskModel
+     */
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+
+    /**
+     * Getter $status
+     *
+     * @return bool
+     */
+    public function getStatus(): bool
+    {
+        return $this->status;
+    }
+
+    /**
+     * Setter $status
+     *
+     * @param bool $status
+     *
+     * @return TaskModel
+     */
+    public function setStatus(bool $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    /**
+     * Getter $description
+     *
+     * @return string
+     */
+    public function getDescription(): string
+    {
+        return $this->description;
+    }
+
+    /**
+     * Setter $description
+     *
+     * @param string $description
+     *
+     * @return TaskModel
+     */
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    /**
+     * Getter $created_at
+     *
+     * @return string
+     */
+    public function getCreatedAt(): string
+    {
+        return $this->created_at;
+    }
+
+    /**
+     * Setter $created_at
+     *
+     * @param string $created_at
+     *
+     * @return TaskModel
+     */
+    public function setCreatedAt(string $created_at): self
+    {
+        $this->created_at = $created_at;
+
+        return $this;
+    }
+
+    /**
+     * Getter $updated_at
+     *
+     * @return string
+     */
+    public function getUpdatedAt(): ?string
+    {
+        return $this->updated_at;
+    }
+
+    /**
+     * Setter $updated_at
+     *
+     * @param string $updated_at
+     *
+     * @return TaskModel
+     */
+    public function setUpdatedAt(string $updated_at): self
+    {
+        $this->updated_at = $updated_at;
+
+        return $this;
     }
 }
