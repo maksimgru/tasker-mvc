@@ -6,7 +6,7 @@ use App\Core\Helpers;
 
 class TaskModel extends Model
 {
-    public const TABLE_NAME = 'tasks';
+    public const TABLE_NAME = 'tasker_tasks';
 
     /** @var int */
     protected $id;

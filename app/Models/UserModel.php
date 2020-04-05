@@ -6,7 +6,7 @@ use App\Core\Helpers;
 
 class UserModel extends Model
 {
-    public const TABLE_NAME = 'users';
+    public const TABLE_NAME = 'tasker_users';
 
     /** @var int */
     protected $id;

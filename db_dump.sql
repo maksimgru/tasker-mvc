@@ -28,8 +28,8 @@ SET time_zone = "+00:00";
 -- Структура таблицы `tasks`
 --
 
-DROP TABLE IF EXISTS `tasks`;
-CREATE TABLE IF NOT EXISTS `tasks` (
+DROP TABLE IF EXISTS `tasker_tasks`;
+CREATE TABLE IF NOT EXISTS `tasker_tasks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS `tasks` (
 -- Структура таблицы `users`
 --
 
-DROP TABLE IF EXISTS `users`;
-CREATE TABLE IF NOT EXISTS `users` (
+DROP TABLE IF EXISTS `tasker_users`;
+CREATE TABLE IF NOT EXISTS `tasker_users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(256) NOT NULL,
   `password` varchar(256) NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- Дамп данных таблицы `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `password`) VALUES
+INSERT INTO `tasker_users` (`id`, `name`, `password`) VALUES
 (1, 'admin', 'c6353e3ee52dc928e13ba2d0faf78d1b');
 COMMIT;
 
